@@ -34,32 +34,25 @@ class Database:
     staffs = []
     managers = []
 
-    @staticmethod
     def add_staff(staff):
         Database.staffs.append(staff)
 
-    @staticmethod
     def add_manager(manager):
         Database.managers.append(manager)
 
-    @staticmethod
     def get_staff_number():
         return len(Database.staffs)
 
-    @staticmethod
     def get_manager_number():
         return len(Database.managers)
 
-    @staticmethod
     def get_all_staffs():
         return Database.staffs
 
-    @staticmethod
     def get_all_managers():
         return Database.managers
     
 class MemberService:
-    @staticmethod
     def register(name, password, department,phone_number,address,is_manager):
         if is_manager:
             new_manager = ManagerStaff(name, password, department,phone_number,address)
@@ -70,7 +63,6 @@ class MemberService:
             Database.add_staff(new_staff)
             return f"註冊成功!\n姓名: {new_staff.name}\n部門: {MemberService.get_department_name(department)}\n工號: {new_staff.staff_id}"
 
-    @staticmethod
     def login(login_id):
         if "-1" in login_id:
             for manager in Database.get_all_managers():
@@ -87,7 +79,7 @@ class MemberService:
                         return staff  # 返回員工對象
                     return "密碼錯誤!"
         return "查無此員工!"
-    @staticmethod
+   
     def get_department_name(department_code):
         return {1: "資源部門", 2: "人力資源", 3: "行銷部門"}.get(department_code, "未知部門")
     
