@@ -1,0 +1,295 @@
+import sys
+import re
+
+class GeneralStaff:
+    def __init__(self, name, password, department,phone_number,address):
+        self.name = name
+        self.password = password
+        self.department = department
+        self.phone_number = phone_number
+        self.address = address
+        self.staff_id = self.generate_staff_id()
+
+    def generate_staff_id(self):
+        department_prefix = {1: "IT", 2: "HR", 3: "MA"}.get(self.department, "UN")
+        staff_count = Database.get_staff_number() + 1
+        return f"{department_prefix}-{staff_count:06d}"
+
+    def verify_password(self, input_password):
+        return self.password == input_password
+
+
+class ManagerStaff(GeneralStaff):
+    def __init__(self, name, password, department,phone_number,address):
+        super().__init__(name, password, department,phone_number,address)
+        self.manager_id = self.generate_manager_id()
+
+    def generate_manager_id(self):
+        department_prefix = {1: "IT", 2: "HR", 3: "MA"}.get(self.department, "UN")
+        manager_count = Database.get_manager_number() + 1
+        return f"{department_prefix}-1{manager_count:05d}"
+
+
+class Database:
+    staffs = []
+    managers = []
+
+    @staticmethod
+    def add_staff(staff):
+        Database.staffs.append(staff)
+
+    @staticmethod
+    def add_manager(manager):
+        Database.managers.append(manager)
+
+    @staticmethod
+    def get_staff_number():
+        return len(Database.staffs)
+
+    @staticmethod
+    def get_manager_number():
+        return len(Database.managers)
+
+    @staticmethod
+    def get_all_staffs():
+        return Database.staffs
+
+    @staticmethod
+    def get_all_managers():
+        return Database.managers
+    
+class MemberService:
+    @staticmethod
+    def register(name, password, department,phone_number,address,is_manager):
+        if is_manager:
+            new_manager = ManagerStaff(name, password, department,phone_number,address)
+            Database.add_manager(new_manager)
+            return f"註冊成功!\n姓名: {new_manager.name}\n部門: {MemberService.get_department_name(department)}\n角色: 管理人員\n工號: {new_manager.manager_id}"
+        else:
+            new_staff = GeneralStaff(name, password, department,phone_number,address)
+            Database.add_staff(new_staff)
+            return f"註冊成功!\n姓名: {new_staff.name}\n部門: {MemberService.get_department_name(department)}\n工號: {new_staff.staff_id}"
+
+    @staticmethod
+    def login(login_id):
+        if "-1" in login_id:
+            for manager in Database.get_all_managers():
+                if manager.manager_id == login_id:
+                    input_password = input("請輸入密碼: ")
+                    if manager.verify_password(input_password):
+                        return manager  # 返回主管對象
+                    return "密碼錯誤!"
+        else:
+            for staff in Database.get_all_staffs():
+                if staff.staff_id == login_id:
+                    input_password = input("請輸入密碼: ")
+                    if staff.verify_password(input_password):
+                        return staff  # 返回員工對象
+                    return "密碼錯誤!"
+        return "查無此員工!"
+    @staticmethod
+    def get_department_name(department_code):
+        return {1: "資源部門", 2: "人力資源", 3: "行銷部門"}.get(department_code, "未知部門")
+    
+def view_all_staffs():
+    print("****** 一般員工列表 ******")
+    if Database.get_staff_number() == 0:
+        print("目前沒有一般員工記錄。")
+    else:
+        for staff in Database.get_all_staffs():
+            print(f"姓名: {staff.name}, 部門: {staff.staff_id[:2]}, 工號: {staff.staff_id}, 電話: {staff.phone_number}, 地址: {staff.address}")
+
+def view_all_managers():
+    print("****** 主管列表 ******")
+    if Database.get_manager_number() == 0:
+        print("目前沒有主管記錄。")
+    else:
+        for manager in Database.get_all_managers():
+            print(f"姓名: {manager.name}, 部門: {manager.manager_id[:2]}, 工號: {manager.manager_id}, 電話: {manager.phone_number}, 地址: {manager.address}")
+
+
+def view_department_members():
+    department_prefixes = {1: "IT", 2: "HR", 3: "MA"}
+    print("請選擇部門查看名單:")
+    print("1) 資源部門(IT)")
+    print("2) 人力資源(HR)")
+    print("3) 行銷部門(MA)")
+
+    try:
+        input_department = int(input("請輸入部門代號: "))
+    except ValueError:
+        print("部門代號無效，請重新操作！")
+        return
+
+    prefix = department_prefixes.get(input_department, None)
+    if not prefix:
+        print("無效的部門代號！")
+        return
+
+    print(f"****** {prefix} 部門名單 ******")
+
+    for manager in Database.get_all_managers():
+        if manager.manager_id.startswith(prefix):
+            print(f"主管: {manager.name}, 工號: {manager.manager_id},電話: {manager.phone_number}, 地址: {manager.address}")
+
+    for staff in Database.get_all_staffs():
+        if staff.staff_id.startswith(prefix):
+            print(f"一般員工: {staff.name}, 工號: {staff.staff_id}, 電話: {staff.phone_number}, 地址: {staff.address}")
+
+#驗證電話號碼格式
+def validate_phone_number(phone_number):
+    pattern = r"^09\d{8}$"
+    return bool(re.match(pattern, phone_number))
+
+#顯示個人資料
+def display_user_info(user):
+    print("****** 個人資料 ******")
+    print(f"姓名: {user.name}")
+    print(f"工號: {user.staff_id if isinstance(user, GeneralStaff) else user.manager_id}")
+    print(f"部門: {user.staff_id[:2] if isinstance(user, GeneralStaff) else user.manager_id[:2]}")
+    print(f"電話: {user.phone_number}")
+    print(f"地址: {user.address}")
+
+#更改基本資料
+def update_user_info(user):
+    while True:
+        print("****** 修改資料 ******")
+        print("1) 修改密碼")
+        print("2) 修改電話號碼")
+        print("3) 修改聯絡地址")
+        print("0) 返回主選單")
+
+        try:
+            option = int(input("請選擇要修改的項目[1,2,3,0]: "))
+        except ValueError:
+            print("請輸入有效選項！")
+            continue
+
+        if option == 1:
+            new_password = input("請輸入新密碼: ")
+            user.password = new_password
+            print("密碼修改成功！")
+        elif option == 2:
+            while True:
+                new_phone_number = input("請輸入新電話號碼: ")
+                if validate_phone_number(new_phone_number):
+                    user.phone_number = new_phone_number
+                    print("電話號碼修改成功！")
+                    break
+                print("電話號碼格式無效！請輸入十碼且以 '09' 開頭的號碼。")
+        elif option == 3:
+            new_address = input("請輸入新聯絡地址: ")
+            user.address = new_address
+            print("聯絡地址修改成功！")
+        elif option == 0:
+            print("返回功能選單")
+            break
+        else:
+            print("無效選項，請重新輸入！")
+
+def main():
+    current_user = None  # 用於追蹤當前登錄的使用者
+
+    while True:
+        try:
+            if current_user is None:  # 尚未登入時
+                print("****** 歡迎進入公司系統 ******")
+                print("1) 登入")
+                print("2) 註冊")
+                print("0) 離開")
+                function_code = int(input("請輸入您想執行的功能代號[1,2,0]: "))
+            else:  # 已登入時，根據角色顯示不同選項
+                print("****** 請選擇想使用的功能 ******")
+                print("1) 查看所有員工")
+                print("2) 查看所有主管")
+                print("3) 查看部門名單")
+                print("4) 顯示個人資料")
+                print("5) 修改個人資料")
+                print("0) 登出")
+                system_function_code = int(input("請輸入您想使用的功能代號[1,2,3,4,5,0]: "))
+
+        except ValueError:
+            print("請輸入有效的數字選項!")
+            continue
+
+        if function_code == 1:
+            if current_user is None:  # 若尚未登入，進行登入
+                login_id = input("請輸入工號(部門-號碼): ")
+                user = MemberService.login(login_id)
+                if isinstance(user, ManagerStaff):
+                    current_user = user
+                    print(f"登入成功！\n姓名: {user.name}\n部門: {user.manager_id[:2]}\n工號: {user.manager_id}")
+                elif isinstance(user, GeneralStaff):
+                    current_user = user
+                    print(f"登入成功！\n姓名: {user.name}\n部門: {user.staff_id[:2]}\n工號: {user.staff_id}")
+                else:
+                    print(user)  # 顯示登入錯誤訊息
+            else:  # 已登入則可選擇系統功能
+                if isinstance(current_user, ManagerStaff) and system_function_code == 1:  # 僅主管可查看所有員工
+                    view_all_staffs()
+
+                elif isinstance(current_user, ManagerStaff)and system_function_code== 2:  # 僅主管可查看所有主管
+                    view_all_managers()
+
+                elif isinstance(current_user, ManagerStaff)and system_function_code == 3:  # 僅主管可查看部門名單
+                    view_department_members()
+
+                elif isinstance(current_user, GeneralStaff)and(system_function_code == 1 or system_function_code == 2 or system_function_code == 3):  # 僅主管可查看部門名單
+                    print("本功能僅限管理人員使用！")
+                    
+                elif system_function_code == 4:  # 顯示個人資料
+                    display_user_info(current_user)
+
+                elif system_function_code == 5:  # 修改個人資料
+                    update_user_info(current_user)
+
+                elif system_function_code == 0:
+                    print(f"{current_user.name} 已登出！")
+                    current_user = None
+
+                else:
+                    print("無效選項，請重新輸入！")
+
+        elif function_code == 2:
+            if current_user is None:  # 尚未登入時，進行註冊
+                input_name = input("請輸入姓名: ")
+                input_password = input("請輸入密碼: ")
+
+                print("1) 資源部門")
+                print("2) 人力資源")
+                print("3) 行銷部門")
+
+                try:
+                    input_department = int(input("請選擇部門: "))
+                except ValueError:
+                    print("部門選擇無效，請重新操作！")
+                    continue
+
+                identity = input("是否為管理人員[Y/n]: ").strip().lower()
+                manager = identity == "y"
+
+                 # 驗證電話號碼格式
+                while True:
+                    phone_number = input("請輸入電話號碼：")
+                    if validate_phone_number(phone_number):
+                        break
+                    else:
+                        print("電話號碼格式無效！請輸入十碼且以 '09' 開頭的號碼。")
+
+                address = input("請輸入聯絡地址：")
+                print(MemberService.register(input_name, input_password, input_department, phone_number, address, manager))
+            else:  # 登入後不可再次註冊
+                print("您已經登入系統，無法註冊！")
+
+      
+
+        elif function_code == 0:
+            print("已關閉系統，謝謝使用！")
+            sys.exit()
+        
+        else:
+            print("無效選項，請重新輸入!")
+
+
+if __name__ == "__main__":
+    main()
