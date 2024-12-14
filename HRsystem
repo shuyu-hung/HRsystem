@@ -247,26 +247,36 @@ def main():
                 input_name = input("請輸入姓名: ")
                 input_password = input("請輸入密碼: ")
 
-                print("1) 資源部門")
-                print("2) 人力資源")
-                print("3) 行銷部門")
-
+                #驗證部門代號是否輸入正確
                 try:
-                    input_department = int(input("請選擇部門: "))
+                    while True:
+                        print("1) 資源部門")
+                        print("2) 人力資源")
+                        print("3) 行銷部門")
+                        input_department = int(input("請選擇部門: "))
+                        
+                        if input_department == 1 or input_department == 2 or input_department == 3:
+                            break
+                        else:
+                            print("職位輸入無效，請重新操作！")
+                            continue
+                            
                 except ValueError:
                     print("部門選擇無效，請重新操作！")
                     continue
 
-                 # 驗證是否為管理人員
-                  try:
+                #驗證是否為部門人員
+                try:
                     while True:
                         identity = input("是否為管理人員[y/n]: ").strip().lower()
                         if identity =="y":
-                            manager = identity == "y"
+                            manager = True
                             break
                         elif identity =="n":
+                            manager = False
                             break
                         else:
+                            print("職位輸入無效，請重新輸入[y/n]！")
                             continue
                 except ValueError:
                     print("職位輸入無效，請重新輸入[y/n]！")
